@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"tempest-cli/types"
 	"time"
 
@@ -62,8 +63,8 @@ var forecastCmd = &cobra.Command{
 		// Current Conditions
 		fmt.Println("--------------------------")
 		fmt.Printf("Station ID: %s @ %s \n", stationId, result.LocationName)
-		fmt.Printf("%s\n", UTCTime(currentConditions.Time))
-		fmt.Printf("--------------------------\nCurrent Conditions: %s\n--------------------------\n", currentConditions.Conditions)
+		fmt.Printf("%s\n", formatTime(currentConditions.Time, ""))
+		fmt.Printf("--------------------------\nCurrent Conditions: %s %s\n--------------------------\n", getForecastIcon(currentConditions.Icon), currentConditions.Conditions)
 		fmt.Printf("Temp: %.2f°%s\n", ConvertToScale(currentConditions.AirTemperature), scale)
 		fmt.Printf("Feels Like: %.2f°%s\n", ConvertToScale(currentConditions.FeelsLike), scale)
 		fmt.Printf("Rel Humidity: %d%%\n", currentConditions.RelativeHumidity)
@@ -79,75 +80,58 @@ var forecastCmd = &cobra.Command{
 
 		// Forecast
 		daily := result.Forecast.Daily
-		fmt.Printf("DAILY TYPE: %T", daily)
+		// TODO: hourly := result.Forecast.Hourly
 
 		fmt.Printf("--------------------------\nForecast\n--------------------------\n")
-		fmt.Printf("%d/%d - %s\n", daily[0].MonthNum, daily[0].DayNum, daily[0].Conditions)
-		// fmt.Printf("Rain Chance: %s %d%%\n", daily[0].PrecipProbability, getRainChanceIcon(0))
-		// TODO: Render this with a for loop over the daily array
+		for i := 0; i < len(daily); i++ {
+			fmt.Println(renderDailyForecast(daily[i]))
+		}
 
 	},
 }
 
-func renderDailyForecast(daily) {
-	for i := 0; i < len(daily); i++ {
-		fmt.Printf(daily[i])
+func renderDailyForecast(daily types.Daily) string {
+	precipProbability := strconv.Itoa(daily.PrecipProbability)
+	if precipProbability == "0" {
+		precipProbability = ""
 	}
+
+	dailyForecast := fmt.Sprint(formatTime(daily.DayStartLocal, "forecast"), "\n")
+	dailyForecast += fmt.Sprint("🌡️  High ", ConvertToScale(daily.AirTempHigh), "°", scale, " -> Low ", ConvertToScale(daily.AirTempLow), "°", scale, "\n")
+	dailyForecast += fmt.Sprint(getForecastIcon(daily.Icon), " ", daily.Conditions, "\n")
+	dailyForecast += fmt.Sprint("🌧️  ", precipProbability, "%\n")
+	dailyForecast += fmt.Sprint("🌅 ", formatTime(daily.Sunrise, "sun"), "\n")
+	dailyForecast += fmt.Sprint("🌇 ", formatTime(daily.Sunset, "sun"), "\n")
+
+	return dailyForecast
 }
 
-// func getRainChanceIcon(index int, daily struct) string {
-// 	icon := daily[index].PrecipIcon
-// 	switch icon {
-// 	case "chance-rain":
-// 		return "☔"
-// 	default:
-// 		return ""
-// 	}
-// }
+func getForecastIcon(iconString string) string {
+	switch iconString {
+	case "possibly-rainy-day":
+		return "☔"
+	case "partly-cloudy-day":
+		return "⛅"
+	case "clear-day":
+		return "☀️ "
+	default:
+		return ""
+	}
+}
 
 func init() {
 	rootCmd.AddCommand(forecastCmd)
 }
 
-// type promptContext struct {
-// 	errorMsg string
-// 	label    string
-// }
-
-// func promptGetInput(pc promptContext) string {
-// 	validate := func(input string) error {
-// 		if len(input) <= 0 {
-// 			return errors.New(pc.errorMsg)
-// 		}
-// 		return nil
-// 	}
-
-// 	templates := &promptui.PromptTemplates{
-// 		Prompt:  "{{ . }} ",
-// 		Valid:   "{{ . | green }} ",
-// 		Invalid: "{{ . | red }} ",
-// 		Success: "{{ . | bold }} ",
-// 	}
-
-// 	prompt := promptui.Prompt{
-// 		Label:     pc.label,
-// 		Templates: templates,
-// 		Validate:  validate,
-// 	}
-
-// 	result, err := prompt.Run()
-// 	if err != nil {
-// 		fmt.Printf("Prompt failed %v\n", err)
-// 		os.Exit(1)
-// 	}
-
-// 	fmt.Printf("Input: %s\n", result)
-// 	return result
-// }
-
-func UTCTime(unixTime int) string {
+func formatTime(unixTime int, format string) string {
 	t := time.Unix(int64(unixTime), 0)
-	return t.Format("Mon Jan 2 03:04:05PM")
+	if format == "sun" {
+		return t.Format("3:04PM")
+	}
+	if format == "forecast" {
+		return t.Format("Mon, Jan 2")
+	}
+	return t.Format("Monday Jan 2 03:04:05PM 2006")
 }
 
 func BasicFetch(url string) ([]byte, error) {

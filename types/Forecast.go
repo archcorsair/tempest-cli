@@ -90,3 +90,39 @@ type Forecast struct {
 	} `json:"units"`
 	SourceIDConditions int `json:"source_id_conditions"`
 }
+
+type Daily struct {
+	DayStartLocal     int     `json:"day_start_local"`
+	DayNum            int     `json:"day_num"`
+	MonthNum          int     `json:"month_num"`
+	Conditions        string  `json:"conditions"`
+	Icon              string  `json:"icon"`
+	Sunrise           int     `json:"sunrise"`
+	Sunset            int     `json:"sunset"`
+	AirTempHigh       float64 `json:"air_temp_high"`
+	AirTempLow        float64 `json:"air_temp_low"`
+	PrecipProbability int     `json:"precip_probability"`
+	PrecipIcon        string  `json:"precip_icon"`
+	PrecipType        string  `json:"precip_type"`
+}
+
+type Hourly struct {
+	Time                  int     `json:"time"`
+	Conditions            string  `json:"conditions"`
+	Icon                  string  `json:"icon"`
+	AirTemperature        float64 `json:"air_temperature"`
+	SeaLevelPressure      float64 `json:"sea_level_pressure"`
+	RelativeHumidity      int     `json:"relative_humidity"`
+	Precip                int     `json:"precip"`
+	PrecipProbability     int     `json:"precip_probability"`
+	PrecipType            string  `json:"precip_type"`
+	PrecipIcon            string  `json:"precip_icon"`
+	WindAvg               float64 `json:"wind_avg"`
+	WindDirection         int     `json:"wind_direction"`
+	WindDirectionCardinal string  `json:"wind_direction_cardinal"`
+	WindGust              float64 `json:"wind_gust"`
+	Uv                    float64 `json:"uv"`
+	FeelsLike             float64 `json:"feels_like"`
+	LocalHour             int     `json:"local_hour"`
+	LocalDay              int     `json:"local_day"`
+}
