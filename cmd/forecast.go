@@ -33,11 +33,13 @@ var forecastCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		stationId = viper.GetString("station_id")
 		scale = viper.GetString("scale")
+		apiKey := viper.GetString("api_key")
+
 		if scale == "" {
 			scale = "F"
 		}
 
-		body, err := BasicFetch(BASEURL + "/better_forecast?station_id=" + stationId + "&token=" + viper.GetString("api_key"))
+		body, err := Fetch(BASEURL + "/better_forecast?station_id=" + stationId + "&token=" + apiKey)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -98,12 +100,44 @@ func renderDailyForecast(daily types.Daily) string {
 
 func getForecastIcon(iconString string) string {
 	switch iconString {
-	case "possibly-rainy-day":
-		return "☔"
-	case "partly-cloudy-day":
-		return "⛅"
 	case "clear-day":
-		return "☀️ "
+		return "☀️"
+	case "clear-night":
+		return "🌙"
+	case "cloudy":
+		return "☁️"
+	case "foggy":
+		return "🌁"
+	case "partly-cloudy-day":
+		return "⛅️"
+	case "partly-cloudy-night":
+		return "☁️"
+	case "possibly-rainy-day":
+		fallthrough
+	case "possibly-rainy-night":
+		return "🌂"
+	case "possibly-sleet-day":
+		fallthrough
+	case "possibly-sleet-night":
+		fallthrough
+	case "sleet":
+		return "❄️🌧"
+	case "possibly-snow-day":
+		fallthrough
+	case "snow":
+		return "🌨"
+	case "possibly-snow-night":
+		return "🌨"
+	case "possibly-thunderstorm-day":
+		fallthrough
+	case "possibly-thunderstorm-night":
+		fallthrough
+	case "thunderstorm":
+		return "⛈"
+	case "rainy":
+		return "🌧"
+	case "windy":
+		return "💨"
 	default:
 		return ""
 	}
@@ -124,7 +158,7 @@ func formatTime(unixTime int, format string) string {
 	return t.Format("Monday Jan 2 03:04:05PM 2006")
 }
 
-func BasicFetch(url string) ([]byte, error) {
+func Fetch(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
