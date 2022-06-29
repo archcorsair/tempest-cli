@@ -42,3 +42,13 @@ cd bin/
 // Windows
 ./tempest.exe --help
 ```
+
+### First Launch
+
+You will be prompted to input your API key and Station ID
+
+These values are required because the tempest API only allows you access to data from your own devices.
+
+### Config File
+
+tempest-cli will generate a config file if none exists: `$HOME/.tempest-cli`
