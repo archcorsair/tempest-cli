@@ -7,6 +7,8 @@ A simple CLI utility for interacting with your Tempest Weather devices
 ### Prerequisites
 
 - Go: https://go.dev/
+- A Tempest Weather System: https://weatherflow.com/tempest-weather-system/
+- A Tempest API Key (Token): https://tempestwx.com/settings/tokens
 
 ### Clone the repository
 
