@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -86,19 +87,24 @@ func hasValidStationId() bool {
 func promptForStationId() {
 	label := "A valid station ID is required to use Tempest-CLI. Please enter your station ID"
 	errorString := "station ID cannot be empty"
-	result, err := prompt(label, errorString)
+	result, err := Prompt(label, errorString)
 	if err != nil {
 		fmt.Printf("Setting station ID failed %v\n", err)
 		os.Exit(1)
 	}
-	viper.Set("station_id", result)
+	id, err := strconv.Atoi(result)
+	if err != nil {
+		fmt.Printf("Setting station ID failed %v\n", err)
+		os.Exit(1)
+	}
+	viper.Set("station_id", id)
 }
 
 func promptForApiKey() {
 	label := "A valid API key is required to use Tempest-CLI. Please enter your API key"
 	errorString := "api key cannot be empty"
 	fmt.Println("You can find your personal token at https://tempestwx.com/settings/tokens")
-	result, err := prompt(label, errorString)
+	result, err := Prompt(label, errorString)
 	if err != nil {
 		fmt.Printf("Setting API key failed %v\n", err)
 		os.Exit(1)
@@ -106,7 +112,7 @@ func promptForApiKey() {
 	viper.Set("api_key", result)
 }
 
-func prompt(label string, errorString string) (string, error) {
+func Prompt(label string, errorString string) (string, error) {
 	prompt := promptui.Prompt{
 		Label: label,
 		Validate: func(input string) error {
@@ -126,14 +132,14 @@ func prompt(label string, errorString string) (string, error) {
 func firstLaunch() {
 	fmt.Println("Welcome to Tempest-CLI!\nFirst-run Setup")
 	fmt.Println("You can find your personal token at https://tempestwx.com/settings/tokens")
-	key, err := prompt("Please enter your API key", "api key cannot be empty")
+	key, err := Prompt("Please enter your API key", "api key cannot be empty")
 	if err != nil {
 		fmt.Printf("Setting API key failed %v\n", err)
 		os.Exit(1)
 	}
 	viper.Set("api_key", key)
 
-	stationId, err := prompt("Set your home station ID", "station id cannot be empty")
+	stationId, err := Prompt("Set your home station ID", "station id cannot be empty")
 	if err != nil {
 		fmt.Printf("Setting station id failed %v\n", err)
 		os.Exit(1)

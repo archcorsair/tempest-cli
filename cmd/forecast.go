@@ -7,12 +7,9 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
 	"strconv"
 	"tempest-cli/types"
-	"time"
+	"tempest-cli/util"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -21,25 +18,39 @@ import (
 const BASEURL = "https://swd.weatherflow.com/swd/rest"
 
 var (
-	stationId string = ""
-	scale     string = ""
+	stationId      int    = 0
+	scale          string = ""
+	maxDays        int    = 10
+	todayOnly      bool   = false
+	showConditions bool   = true
 )
 
+func init() {
+	rootCmd.AddCommand(forecastCmd)
+	forecastCmd.Flags().IntVarP(&maxDays, "max", "m", 10, "Maximum days to display up to 10")
+	forecastCmd.Flags().BoolVarP(&todayOnly, "today", "t", false, "Display only today's forecast")
+	forecastCmd.Flags().IntVarP(&stationId, "station", "s", 0, "Display forecast for a specific owned station")
+	forecastCmd.Flags().BoolVarP(&showConditions, "conditions", "c", true, "Whether to display conditions")
+}
+
 var forecastCmd = &cobra.Command{
-	Use:   "forecast [station id]",
+	Use:   "forecast",
 	Short: "Get forecast from weather station",
 	Long:  "Get forecast from default weather station or station with [station id]. Will use default station if no station id is provided",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		stationId = viper.GetString("station_id")
 		scale = viper.GetString("scale")
 		apiKey := viper.GetString("api_key")
+
+		if stationId == 0 {
+			stationId = viper.GetInt("station_id")
+		}
 
 		if scale == "" {
 			scale = "F"
 		}
 
-		body, err := Fetch(BASEURL + "/better_forecast?station_id=" + stationId + "&token=" + apiKey)
+		body, err := util.Fetch(BASEURL + "/better_forecast?station_id=" + strconv.Itoa(stationId) + "&token=" + apiKey)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -48,38 +59,54 @@ var forecastCmd = &cobra.Command{
 		if err := json.Unmarshal(body, &result); err != nil {
 			fmt.Println("Cannot unmarshal JSON")
 		}
-
-		currentConditions := result.CurrentConditions
-		units := result.Units
-
 		// Current Conditions
-		fmt.Println("--------------------------")
-		fmt.Printf("Station ID: %s @ %s \n", stationId, result.LocationName)
-		fmt.Printf("%s\n", formatTime(currentConditions.Time, ""))
-		fmt.Printf("--------------------------\nCurrent Conditions: %s %s\n--------------------------\n", getForecastIcon(currentConditions.Icon), currentConditions.Conditions)
-		fmt.Printf("Temp: %.2f°%s\n", ConvertToScale(currentConditions.AirTemperature), scale)
-		fmt.Printf("Feels Like: %.2f°%s\n", ConvertToScale(currentConditions.FeelsLike), scale)
-		fmt.Printf("Rel Humidity: %d%%\n", currentConditions.RelativeHumidity)
-		fmt.Printf("Dew Point: %.2f°%s\n", ConvertToScale(currentConditions.DewPoint), scale)
-		fmt.Printf("Avg Wind Speed: %.2f %s\n", currentConditions.WindAvg, units.UnitsWind)
-		fmt.Printf("Wind Direction: %s\n", currentConditions.WindDirectionCardinal)
-		fmt.Printf("Wind Gust: %.2f %s\n", currentConditions.WindGust, units.UnitsWind)
-		fmt.Printf("Pressure: %.2f %s\n", currentConditions.StationPressure, units.UnitsPressure)
-		fmt.Printf("Pressure Trend: %s\n", currentConditions.PressureTrend)
-		fmt.Printf("Solar Radiation: %d %s\n", currentConditions.SolarRadiation, units.UnitsSolarRadiation)
-		fmt.Printf("UV Index: %d\n", currentConditions.Uv)
-		fmt.Printf("Brightness: %d %s\n", currentConditions.Brightness, units.UnitsBrightness)
-
+		fmt.Println(renderConditions(result, showConditions))
 		// Forecast
 		daily := result.Forecast.Daily
 		// TODO: hourly := result.Forecast.Hourly
-
 		fmt.Printf("--------------------------\nForecast\n--------------------------\n")
-		for i := 0; i < len(daily); i++ {
-			fmt.Println(renderDailyForecast(daily[i]))
+		var daysToDisplay int
+		if maxDays > len(daily) {
+			daysToDisplay = len(daily)
+		} else if maxDays < len(daily) || maxDays <= 0 {
+			daysToDisplay = maxDays
+		} else if todayOnly {
+			daysToDisplay = 1
+		} else {
+			daysToDisplay = maxDays
 		}
 
+		for i := 0; i < daysToDisplay; i++ {
+			fmt.Println(renderDailyForecast(daily[i]))
+		}
 	},
+}
+
+func renderConditions(result types.Forecast, show bool) string {
+	if !show {
+		return ""
+	}
+	currentConditions := result.CurrentConditions
+	units := result.Units
+
+	conditionsString := "--------------------------"
+	conditionsString += fmt.Sprintf("Station ID: %d @ %s \n", stationId, result.LocationName)
+	conditionsString += fmt.Sprintf("%s\n", util.FormatTime(currentConditions.Time, ""))
+	conditionsString += fmt.Sprintf("--------------------------\nCurrent Conditions: %s %s\n--------------------------\n", util.GetWeatherIcon(currentConditions.Icon), currentConditions.Conditions)
+	conditionsString += fmt.Sprintf("Temp: %.2f°%s\n", util.CurrentScale(currentConditions.AirTemperature, scale), scale)
+	conditionsString += fmt.Sprintf("Feels Like: %.2f°%s\n", util.CurrentScale(currentConditions.FeelsLike, scale), scale)
+	conditionsString += fmt.Sprintf("Rel Humidity: %d%%\n", currentConditions.RelativeHumidity)
+	conditionsString += fmt.Sprintf("Dew Point: %.2f°%s\n", util.CurrentScale(currentConditions.DewPoint, scale), scale)
+	conditionsString += fmt.Sprintf("Avg Wind Speed: %.2f %s\n", currentConditions.WindAvg, units.UnitsWind)
+	conditionsString += fmt.Sprintf("Wind Direction: %s\n", currentConditions.WindDirectionCardinal)
+	conditionsString += fmt.Sprintf("Wind Gust: %.2f %s\n", currentConditions.WindGust, units.UnitsWind)
+	conditionsString += fmt.Sprintf("Pressure: %.2f %s\n", currentConditions.StationPressure, units.UnitsPressure)
+	conditionsString += fmt.Sprintf("Pressure Trend: %s\n", currentConditions.PressureTrend)
+	conditionsString += fmt.Sprintf("Solar Radiation: %d %s\n", currentConditions.SolarRadiation, units.UnitsSolarRadiation)
+	conditionsString += fmt.Sprintf("UV Index: %d\n", currentConditions.Uv)
+	conditionsString += fmt.Sprintf("Brightness: %d %s\n", currentConditions.Brightness, units.UnitsBrightness)
+
+	return conditionsString
 }
 
 func renderDailyForecast(daily types.Daily) string {
@@ -88,93 +115,12 @@ func renderDailyForecast(daily types.Daily) string {
 		precipProbability = ""
 	}
 
-	dailyForecast := fmt.Sprint(formatTime(daily.DayStartLocal, "forecast"), "\n")
-	dailyForecast += fmt.Sprint("🌡️  High ", ConvertToScale(daily.AirTempHigh), "°", scale, " -> Low ", ConvertToScale(daily.AirTempLow), "°", scale, "\n")
-	dailyForecast += fmt.Sprint(getForecastIcon(daily.Icon), " ", daily.Conditions, "\n")
+	dailyForecast := fmt.Sprint(util.FormatTime(daily.DayStartLocal, "forecast"), "\n")
+	dailyForecast += fmt.Sprint("🌡️  High ", util.CurrentScale(daily.AirTempHigh, scale), "°", scale, " -> Low ", util.CurrentScale(daily.AirTempLow, scale), "°", scale, "\n")
+	dailyForecast += fmt.Sprint(util.GetWeatherIcon(daily.Icon), " ", daily.Conditions, "\n")
 	dailyForecast += fmt.Sprint("🌧️  ", precipProbability, "%\n")
-	dailyForecast += fmt.Sprint("🌅 ", formatTime(daily.Sunrise, "sun"), "\n")
-	dailyForecast += fmt.Sprint("🌇 ", formatTime(daily.Sunset, "sun"), "\n")
+	dailyForecast += fmt.Sprint("🌅 ", util.FormatTime(daily.Sunrise, "sun"), "\n")
+	dailyForecast += fmt.Sprint("🌇 ", util.FormatTime(daily.Sunset, "sun"), "\n")
 
 	return dailyForecast
-}
-
-func getForecastIcon(iconString string) string {
-	switch iconString {
-	case "clear-day":
-		return "☀️"
-	case "clear-night":
-		return "🌙"
-	case "cloudy":
-		return "☁️"
-	case "foggy":
-		return "🌁"
-	case "partly-cloudy-day":
-		return "⛅️"
-	case "partly-cloudy-night":
-		return "☁️"
-	case "possibly-rainy-day":
-		fallthrough
-	case "possibly-rainy-night":
-		return "🌂"
-	case "possibly-sleet-day":
-		fallthrough
-	case "possibly-sleet-night":
-		fallthrough
-	case "sleet":
-		return "❄️🌧"
-	case "possibly-snow-day":
-		fallthrough
-	case "snow":
-		return "🌨"
-	case "possibly-snow-night":
-		return "🌨"
-	case "possibly-thunderstorm-day":
-		fallthrough
-	case "possibly-thunderstorm-night":
-		fallthrough
-	case "thunderstorm":
-		return "⛈"
-	case "rainy":
-		return "🌧"
-	case "windy":
-		return "💨"
-	default:
-		return ""
-	}
-}
-
-func init() {
-	rootCmd.AddCommand(forecastCmd)
-}
-
-func formatTime(unixTime int, format string) string {
-	t := time.Unix(int64(unixTime), 0)
-	if format == "sun" {
-		return t.Format("3:04PM")
-	}
-	if format == "forecast" {
-		return t.Format("Mon, Jan 2")
-	}
-	return t.Format("Monday Jan 2 03:04:05PM 2006")
-}
-
-func Fetch(url string) ([]byte, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return body, nil
-}
-
-func ConvertToScale(c float64) float64 {
-	if scale == "F" {
-		return c*9/5 + 32
-	}
-	return c
 }

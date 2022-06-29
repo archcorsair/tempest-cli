@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 archcorsair <archcorsair@gmail.com>
+Copyright © 2022 Daniel Shneyder <archcorsair@gmail.com>
 
 */
 package cmd
