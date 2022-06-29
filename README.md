@@ -75,7 +75,7 @@ UV Index: 2
 Brightness: 17871 lux
 
 --------------------------
-10 Day Forecast
+1 Day Forecast
 --------------------------
 Wed, Jun 01
 🌡️  High 62.6°F -> Low 53.6°F
