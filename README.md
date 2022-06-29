@@ -47,6 +47,16 @@ Flags:
   -t, --today         Display only today's forecast
 ```
 
+**Sample Usage**:
+
+`tempest forecast -c false -t`
+
+Omit current conditions and show today's forecast only
+
+`tempest forecast -m 5 -s 12345`
+
+Show current conditions from station id 12345 and a 5 day forecast (including today)
+
 ### Prerequisites
 
 - Go: https://go.dev/
