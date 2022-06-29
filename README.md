@@ -47,15 +47,85 @@ Flags:
   -t, --today         Display only today's forecast
 ```
 
-**Sample Usage**:
+**Usage Examples**:
+
+Omit current conditions and show today's forecast only using configured default station id
 
 `tempest forecast -c false -t`
 
-Omit current conditions and show today's forecast only
+```
+--------------------------
+Wednesday Jun 01 08:30:20AM 2022
+--------------------------
+Station ID: 12345 @ Cityville
+--------------------------
+Current Conditions: ☁️ Cloudy
+--------------------------
+Temp: 53.60°F
+Feels Like: 53.60°F
+Rel Humidity: 93%
+Dew Point: 51.80°F
+Avg Wind Speed: 1.00 mps
+Wind Direction: WNW
+Wind Gust: 3.00 mps
+Pressure: 1008.00 mb
+Pressure Trend: rising
+Solar Radiation: 149 w/m2
+UV Index: 2
+Brightness: 17871 lux
 
-`tempest forecast -m 5 -s 12345`
+--------------------------
+10 Day Forecast
+--------------------------
+Wed, Jun 01
+🌡️  High 62.6°F -> Low 53.6°F
+🌂 Rain Possible
+🌧️  20%
+🌅 5:51AM
+🌇 8:35PM
+```
 
-Show current conditions from station id 12345 and a 5 day forecast (including today)
+Show current conditions from station id 12345 and a 2 day forecast (including today)
+`tempest forecast -m 2 -s 12345`
+
+```
+--------------------------
+Wednesday Jun 01 08:57:20AM 2022
+--------------------------
+Station ID: 12345 @ Cityville
+--------------------------
+Current Conditions: ⛅️ Partly Cloudy
+--------------------------
+Temp: 53.60c°F
+Feels Like: 53.60°F
+Rel Humidity: 91%
+Dew Point: 51.80°F
+Avg Wind Speed: 1.00 mps
+Wind Direction: WNW
+Wind Gust: 2.00 mps
+Pressure: 1008.20 mb
+Pressure Trend: rising
+Solar Radiation: 210 w/m2
+UV Index: 3
+Brightness: 25241 lux
+
+--------------------------
+2 Day Forecast
+--------------------------
+Wed, Jun 01
+🌡️  High 62.6°F -> Low 53.6°F
+🌂 Rain Possible
+🌧️  20%
+🌅 5:51AM
+🌇 8:35PM
+
+Thu, Jun 30
+🌡️  High 62.6°F -> Low 53.6°F
+🌂 Rain Possible
+🌧️  20%
+🌅 5:51AM
+🌇 8:35PM
+```
 
 ### Prerequisites
 
