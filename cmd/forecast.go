@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+Copyright © 2022 Daniel Shneyder <archcorsair@gmail.com>
 
 */
 package cmd
@@ -22,7 +22,7 @@ const BASEURL = "https://swd.weatherflow.com/swd/rest"
 
 var (
 	stationId string = ""
-	scale     string = "F"
+	scale     string = ""
 )
 
 var forecastCmd = &cobra.Command{
@@ -32,22 +32,12 @@ var forecastCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		stationId = viper.GetString("station_id")
-		if len(args) == 0 && stationId == "" {
-			input := ""
-			fmt.Println("Please provide a station id:")
-			fmt.Scanln(&input)
-			stationId = input
+		scale = viper.GetString("scale")
+		if scale == "" {
+			scale = "F"
 		}
 
-		targetStation := ""
-		if len(args) == 1 {
-			targetStation = args[0]
-			stationId = targetStation
-		} else {
-			targetStation = stationId
-		}
-
-		body, err := BasicFetch(BASEURL + "/better_forecast?station_id=" + targetStation + "&token=" + viper.GetString("api_key"))
+		body, err := BasicFetch(BASEURL + "/better_forecast?station_id=" + stationId + "&token=" + viper.GetString("api_key"))
 		if err != nil {
 			fmt.Println(err)
 		}
