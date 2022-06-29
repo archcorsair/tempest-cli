@@ -86,6 +86,7 @@ Wed, Jun 01
 ```
 
 Show current conditions from station id 12345 and a 2 day forecast (including today)
+
 `tempest forecast -m 2 -s 12345`
 
 ```
